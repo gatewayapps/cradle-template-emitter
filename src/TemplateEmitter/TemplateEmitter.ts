@@ -1,33 +1,62 @@
 import { CradleSchema, IConsole, ICradleEmitter } from '@gatewayapps/cradle'
-import { IEmitterOptions } from '@gatewayapps/cradle/dist/lib/EmitterOptions'
+import EmitterOptions, { IEmitterOptions } from '@gatewayapps/cradle/dist/lib/EmitterOptions'
+import PropertyType from '@gatewayapps/cradle/dist/lib/PropertyTypes/PropertyType'
 import * as dot from 'dot'
 import * as fs from 'fs'
+import { ITemplateEmitterOptions } from './ITemplateEmitterOptions'
 
 export class TemplateEmitter implements ICradleEmitter {
+    public config?: EmitterOptions<ITemplateEmitterOptions>
+    public console?: IConsole
+    public dataTypeMappings?: any
+    public languageType?: string
+
     public prepareEmitter(options: IEmitterOptions, console: IConsole) {
+        this.config = options
+        this.console = console
+        this.dataTypeMappings = {}
+        this.languageType = ''
+    }
+
+    public emitSchema(schema: CradleSchema) {
         try {
-            // get the template path
-            const templateFilePath = `${options.options.sourcePath}/${options.name}.dot`
+            if (!this.config || !this.config.options) {
+                throw new Error('Template emitter options are required')
+            }
 
-            // read template in as string
-            fs.readFile(templateFilePath, {encoding: 'utf8'}, (err: NodeJS.ErrnoException, data: string) => {
-                if (err) {
-                    console.error(err)
-                    throw new Error(err.message)
+            const templateString = fs.readFileSync(this.config.options.sourcePath, {encoding: 'utf8'})
+
+            if (!templateString || templateString === '') {
+                throw new Error('There was a problem reading the template file')
+            }
+
+            const templateOpts = dot.templateSettings
+            templateOpts.strip = false
+
+            const fn = dot.template(templateString, templateOpts, undefined)
+            const outputFileFn = dot.template(this.config.options.outputPath, undefined, undefined)
+            this.languageType = this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
+            this.dataTypeMappings = require(`./mappings/${this.languageType}/mapping.js`)
+
+            // for each schema model, create an object and pass into the dot template generated function
+            schema.Models.map((m) => {
+                console.log(m.Properties)
+                const props = {
+                    Name: m.Name,
+                    Properties: Object.keys(m.Properties).map((propertyName) => {
+                        return Object.assign({Name: propertyName}, this.formatDataContext(m.Properties[propertyName]))
+                    })
                 }
 
-                const obj = {
-                    age: 102,
-                    name: 'Steve Sipa',
+                const content = fn(props)
+                const outputFullPath = outputFileFn({Name: m.Name})
+                const ouptputPath = outputFullPath.substring(0, outputFullPath.lastIndexOf('\\'))
+
+                if (!fs.existsSync(ouptputPath)) {
+                    fs.mkdirSync(ouptputPath)
                 }
 
-                // execute dot method to compile
-                const fn = dot.template(data, undefined, undefined)
-
-                // execute resulting method to get content
-                const content = fn(obj)
-
-                console.log(content)
+                fs.writeFileSync(outputFullPath, content)
             })
 
         } catch (err) {
@@ -37,7 +66,39 @@ export class TemplateEmitter implements ICradleEmitter {
         }
     }
 
-    public emitSchema(schema: CradleSchema) {
+    public formatDataContext(property: PropertyType) {
+        return {
+            AllowNull: property.AllowNull,
+            DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
+            IsPrimaryKey: property.IsPrimaryKey,
+            TypeName: this.mapDataTypes(property.TypeName),
+            Unique: property.Unique
+        }
+    }
 
+    public mapDataTypes(typeName: string): string {
+        try {
+            if (!this.dataTypeMappings) {
+                return typeName
+            }
+
+            return this.dataTypeMappings.values[typeName].type || typeName
+        } catch (err) {
+            console.error(err)
+            return typeName
+        }
+    }
+
+    public mapDefaultValues(typeName: string, defaultValue: any) {
+        try {
+            if (!this.dataTypeMappings) {
+                return defaultValue
+            }
+
+            return this.dataTypeMappings.values[typeName].defaultValue !== undefined ? this.dataTypeMappings.values[typeName].defaultValue : typeName
+        } catch (err) {
+            console.error(err)
+            return typeName
+        }
     }
 }

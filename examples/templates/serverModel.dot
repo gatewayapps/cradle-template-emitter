@@ -1,2 +1,27 @@
-<div>Hi {{=it.name}}!</div>
-<div>{{=it.age || ''}}</div>
+import { Record } from 'immutable'
+
+export interface I{{=it.Name}} {
+    {{~it.Properties :value:index}}
+    readonly {{=value.Name}}: {{=value.TypeName}}
+    {{~}}
+}
+
+const {{=it.Name}}Record = Record({
+    {{~it.Properties :value:index}}
+    {{=value.Name}}: {{=value.DefaultValue}},
+    {{~}}
+})
+
+export class {{=it.Name}} extends {{=it.Name}}Record implements I{{=it.Name}} {
+    public static fromJS(initialState?: Partial<I{{=it.Name}}>) {
+        return new {{=it.Name}}(initialState)
+    }
+
+    {{~it.Properties :value:index}}
+    public readonly {{=value.Name}}: {{=value.TypeName}}
+    {{~}}
+
+    constructor(initialState?: Partial<{{=it.Name}}>) {
+        initialState ? super(initialState) : super()
+    }
+}

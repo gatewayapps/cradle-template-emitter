@@ -8,7 +8,7 @@ const loaderOptions = new cradle.LoaderOptions('spec', {
 const emitterOpts = [
     new cradle.EmitterOptions('serverModel', path.resolve(__dirname, '../dist/index.js'), {
         sourcePath: './examples/templates/serverModel.dot',
-        outputPath: './examples/output/{{=it.modelName}}.ts',
+        outputPath: 'D:\\Source\\Repos\\test-cradle\\output\\{{=it.Name}}.ts',
         overwriteExisting: true
     }, console)
 ]

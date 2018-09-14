@@ -1,0 +1,1 @@
+# cradle-template-emitter

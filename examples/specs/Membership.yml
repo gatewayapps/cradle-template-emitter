@@ -1,0 +1,4 @@
+Membership:
+  properties:
+    authenticatorId: string
+    type: string allow("Role", "Team")

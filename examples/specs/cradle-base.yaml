@@ -1,0 +1,7 @@
+ActivityFeedItem: ./ActivityFeedItem.yml#ActivityFeedItem
+Address: ./Address.yml#Address
+Area: ./Area.yml#Area
+EntityAllow: ./EntityAllow.yml#EntityAllow
+Membership: ./Membership.yml#Membership
+User: ./User.yml#User
+UserPermissions: ./UserPermissions.yml#UserPermissions

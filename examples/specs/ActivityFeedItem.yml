@@ -1,0 +1,5 @@
+ActivityFeedItem:
+  properties:
+    dateCreated: integer
+    id: string
+    lastActivityTime: integer

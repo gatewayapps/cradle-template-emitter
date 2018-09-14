@@ -1,0 +1,13 @@
+Assignment:
+  properties:
+    assignedTo:
+      isArray: true
+      modelRef: AssociatedContact
+    attachments:
+      isArray: true
+      modelRef: Attachment
+    author:
+      modelRef: AssociatedContact
+    comments:
+      isArray: true
+      modelRef: Comment

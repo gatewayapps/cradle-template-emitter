@@ -1,0 +1,8 @@
+EntityAllow:
+  properties:
+    authenticatorId: string
+    name: string
+    type: string allow("Property", "Contact", "Role", "Team", "Listing", "DevelopmentSite", "DevelopmentClient")
+    value: string allow("ViewOnly", "OwnAttachments", "Edit", "Unrestricted")
+    hasChanged: boolean default(0)
+    isAdded: boolean

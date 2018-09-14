@@ -30,6 +30,8 @@ export class TemplateEmitter implements ICradleEmitter {
                 throw new Error('There was a problem reading the template file')
             }
 
+            console.log(schema)
+
             // do not strip whitespace
             const templateOpts = dot.templateSettings
             templateOpts.strip = false
@@ -55,8 +57,6 @@ export class TemplateEmitter implements ICradleEmitter {
                     References: m.References
                 }
 
-                console.log(props)
-
                 const content = fn(props)
                 const outputFullPath = outputFileFn({Name: m.Name})
                 const ouptputPath = outputFullPath.substring(0, outputFullPath.lastIndexOf('\\'))
@@ -75,12 +75,14 @@ export class TemplateEmitter implements ICradleEmitter {
         }
     }
 
-    public formatDataContext(property: PropertyType) {
+    public formatDataContext(property: any) {
         return {
             AllowNull: property.AllowNull,
             DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
             IsPrimaryKey: property.IsPrimaryKey,
-            TypeName: this.mapDataTypes(property.TypeName),
+            MemberType: property.MemberType,
+            ModelName: property.ModelName,
+            TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
             Unique: property.Unique
         }
     }

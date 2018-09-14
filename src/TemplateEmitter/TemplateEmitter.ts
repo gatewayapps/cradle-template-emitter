@@ -14,7 +14,7 @@ export class TemplateEmitter implements ICradleEmitter {
     public prepareEmitter(options: IEmitterOptions, console: IConsole) {
         this.config = options
         this.console = console
-        this.dataTypeMappings = {}
+        this.dataTypeMappings = undefined
         this.languageType = ''
     }
 
@@ -30,23 +30,32 @@ export class TemplateEmitter implements ICradleEmitter {
                 throw new Error('There was a problem reading the template file')
             }
 
+            // do not strip whitespace
             const templateOpts = dot.templateSettings
             templateOpts.strip = false
 
             const fn = dot.template(templateString, templateOpts, undefined)
             const outputFileFn = dot.template(this.config.options.outputPath, undefined, undefined)
+
+            // get language type based on output path file extension
             this.languageType = this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
+
+            // get data type mappings based on language type
             this.dataTypeMappings = require(`./mappings/${this.languageType}/mapping.js`)
 
             // for each schema model, create an object and pass into the dot template generated function
             schema.Models.map((m) => {
                 console.log(m.Properties)
                 const props = {
+                    Meta: m.Meta,
                     Name: m.Name,
                     Properties: Object.keys(m.Properties).map((propertyName) => {
                         return Object.assign({Name: propertyName}, this.formatDataContext(m.Properties[propertyName]))
-                    })
+                    }),
+                    References: m.References
                 }
+
+                console.log(props)
 
                 const content = fn(props)
                 const outputFullPath = outputFileFn({Name: m.Name})

@@ -2,7 +2,11 @@ import { Record } from 'immutable'
 
 export interface I{{=it.Name}} {
     {{~it.Properties :value:index}}
+    {{? value.AllowNull }}
+    readonly {{=value.Name}}?: {{=value.TypeName}}
+    {{??}}
     readonly {{=value.Name}}: {{=value.TypeName}}
+    {{?}}
     {{~}}
 }
 
@@ -18,7 +22,11 @@ export class {{=it.Name}} extends {{=it.Name}}Record implements I{{=it.Name}} {
     }
 
     {{~it.Properties :value:index}}
+    {{? value.AllowNull }}
+    public readonly {{=value.Name}}?: {{=value.TypeName}}
+    {{??}}
     public readonly {{=value.Name}}: {{=value.TypeName}}
+    {{?}}
     {{~}}
 
     constructor(initialState?: Partial<{{=it.Name}}>) {

@@ -1,6 +1,6 @@
 import { CradleSchema, IConsole, ICradleEmitter } from '@gatewayapps/cradle'
 import EmitterOptions, { IEmitterOptions } from '@gatewayapps/cradle/dist/lib/EmitterOptions'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as handlebars from 'handlebars'
 import * as path from 'path'
 import { ITemplateEmitterOptions } from './ITemplateEmitterOptions'
@@ -55,13 +55,20 @@ export class TemplateEmitter implements ICradleEmitter {
                 const content = fn(props)
 
                 const outputFullPath = path.resolve(process.cwd(), outputFileFn({ Name: m.Name }))
-                const outputPath = path.dirname(outputFullPath)
+                const outDir = path.dirname(outputFullPath)
 
-                if (!fs.existsSync(outputPath)) {
-                    fs.mkdirSync(outputPath)
-                }
+                fs.ensureDir(outDir).then(() => {
+                    const fileExists = fs.existsSync(outputFullPath)
 
-                fs.writeFileSync(outputFullPath, content)
+                    if (fileExists) {
+                        if (!this.config || !this.config.options.overwriteExisting) {
+                            console.log('Overwrite rules state no overwriting of existing file:', outputFullPath)
+                            return
+                        }
+                    }
+
+                    fs.writeFileSync(outputFullPath, content)
+                })
             })
 
         } catch (err) {

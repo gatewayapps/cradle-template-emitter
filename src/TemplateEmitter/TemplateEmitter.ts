@@ -1,8 +1,8 @@
 import { CradleSchema, IConsole, ICradleEmitter } from '@gatewayapps/cradle'
 import EmitterOptions, { IEmitterOptions } from '@gatewayapps/cradle/dist/lib/EmitterOptions'
-import PropertyType from '@gatewayapps/cradle/dist/lib/PropertyTypes/PropertyType'
-import * as dot from 'dot'
 import * as fs from 'fs'
+import * as handlebars from 'handlebars'
+import * as path from 'path'
 import { ITemplateEmitterOptions } from './ITemplateEmitterOptions'
 
 export class TemplateEmitter implements ICradleEmitter {
@@ -30,14 +30,10 @@ export class TemplateEmitter implements ICradleEmitter {
                 throw new Error('There was a problem reading the template file')
             }
 
-            console.log(schema)
+            this.registerHandlebarsHelperMethods()
 
-            // do not strip whitespace
-            const templateOpts = dot.templateSettings
-            templateOpts.strip = false
-
-            const fn = dot.template(templateString, templateOpts, undefined)
-            const outputFileFn = dot.template(this.config.options.outputPath, undefined, undefined)
+            const fn = handlebars.compile(templateString)
+            const outputFileFn = handlebars.compile(this.config.options.outputPath.split(path.sep).join('/'))
 
             // get language type based on output path file extension
             this.languageType = this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
@@ -47,7 +43,6 @@ export class TemplateEmitter implements ICradleEmitter {
 
             // for each schema model, create an object and pass into the dot template generated function
             schema.Models.map((m) => {
-                console.log(m.Properties)
                 const props = {
                     Meta: m.Meta,
                     Name: m.Name,
@@ -58,11 +53,12 @@ export class TemplateEmitter implements ICradleEmitter {
                 }
 
                 const content = fn(props)
-                const outputFullPath = outputFileFn({Name: m.Name})
-                const ouptputPath = outputFullPath.substring(0, outputFullPath.lastIndexOf('\\'))
 
-                if (!fs.existsSync(ouptputPath)) {
-                    fs.mkdirSync(ouptputPath)
+                const outputFullPath = path.resolve(process.cwd(), outputFileFn({ Name: m.Name }))
+                const outputPath = path.dirname(outputFullPath)
+
+                if (!fs.existsSync(outputPath)) {
+                    fs.mkdirSync(outputPath)
                 }
 
                 fs.writeFileSync(outputFullPath, content)
@@ -111,5 +107,31 @@ export class TemplateEmitter implements ICradleEmitter {
             console.error(err)
             return typeName
         }
+    }
+
+    public registerHandlebarsHelperMethods() {
+        handlebars.registerHelper('ifEquals', (arg1, arg2, options) => {
+            return (arg1 === arg2) ? options.fn(this) : options.inverse(this)
+        })
+
+        handlebars.registerHelper('ifNotEquals', (arg1, arg2, options) => {
+            return (arg1 !== arg2) ? options.fn(this) : options.inverse(this)
+        })
+
+        handlebars.registerHelper('isArray', (arg1, options) => {
+            return (arg1 === 'Array') ? options.fn(this) : options.inverse(this)
+        })
+
+        handlebars.registerHelper('isNotArray', (arg1, options) => {
+            return (arg1 !== 'Array') ? options.fn(this) : options.inverse(this)
+        })
+
+        handlebars.registerHelper('isBaseDataType', (args, options) => {
+            return (args.TypeName !== 'Array' && !args.ModelName) ? options.fn(this) : options.inverse(this)
+        })
+
+        handlebars.registerHelper('isObject', (args, options) => {
+            return (args.ModelName !== undefined) ? options.fn(this) : options.inverse(this)
+        })
     }
 }

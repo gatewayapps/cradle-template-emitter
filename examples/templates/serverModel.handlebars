@@ -1,0 +1,86 @@
+import { List, Record } from 'immutable'
+{{#each Properties as |prop|}}
+{{#isArray prop.TypeName}}
+import { I{{prop.MemberType.ModelName}}, {{prop.MemberType.ModelName}} } from './{{prop.MemberType.ModelName}}'
+{{/isArray}}
+{{#isObject prop}}
+import { I{{prop.ModelName}}, {{prop.ModelName}} } from './{{prop.ModelName}}'
+{{/isObject}}
+{{/each}}
+
+export interface I{{Name}} {
+    {{#each Properties as |prop|}}
+    {{#if prop.AllowNull }}
+    {{#isArray TypeName}}
+    readonly {{prop.Name}}?: List<I{{prop.MemberType.ModelName}}>
+    {{/isArray}}
+    {{#isObject prop}}
+    readonly {{prop.Name}}?: I{{prop.ModelName}}
+    {{/isObject}}
+    {{#isBaseDataType prop}}
+    readonly {{prop.Name}}?: {{prop.TypeName}}
+    {{/isBaseDataType}}
+    {{else}}
+    {{#isArray TypeName}}
+    readonly {{prop.Name}}: List<I{{prop.MemberType.ModelName}}>
+    {{/isArray}}
+    {{#isObject prop}}
+    readonly {{prop.Name}}: I{{prop.ModelName}}
+    {{/isObject}}
+    {{#isBaseDataType prop}}
+    readonly {{prop.Name}}: {{prop.TypeName}}
+    {{/isBaseDataType}}
+    {{/if}}
+    {{/each}}
+}
+
+const {{Name}}Record = Record({
+    {{#each Properties as |prop|}}
+    {{#if value.ModelName }}
+    {{prop.Name}}: new {{prop.ModelName}}(),
+    {{/if}}
+    {{#isArray prop.TypeName}}
+    {{prop.Name}}: List<{{prop.MemberType.ModelName}}>(),
+    {{/isArray}}
+    {{#isObject prop}}
+    {{prop.Name}}: undefined,
+    {{/isObject}}
+    {{#isBaseDataType prop}}
+    {{prop.Name}}: {{{prop.DefaultValue}}},
+    {{/isBaseDataType}}
+    {{/each}}
+})
+
+export class {{Name}} extends {{Name}}Record implements I{{Name}} {
+    public static fromJS(initialState?: Partial<I{{Name}}>) {
+        return new {{Name}}(initialState)
+    }
+
+    {{#each Properties as |prop|}}
+    {{#if prop.AllowNull }}
+    {{#isArray TypeName}}
+    public readonly {{prop.Name}}?: List<{{prop.MemberType.ModelName}}>
+    {{/isArray}}
+    {{#isObject prop}}
+    public readonly {{prop.Name}}?: {{prop.ModelName}}
+    {{/isObject}}
+    {{#isBaseDataType prop}}
+    public readonly {{prop.Name}}?: {{prop.TypeName}}
+    {{/isBaseDataType}}
+    {{else}}
+    {{#isArray TypeName}}
+    public readonly {{prop.Name}}: List<{{prop.MemberType.ModelName}}>
+    {{/isArray}}
+    {{#isObject prop}}
+    public readonly {{prop.Name}}: {{prop.ModelName}}
+    {{/isObject}}
+    {{#isBaseDataType prop}}
+    public readonly {{prop.Name}}: {{prop.TypeName}}
+    {{/isBaseDataType}}
+    {{/if}}
+    {{/each}}
+
+    constructor(initialState?: Partial<{{Name}}>) {
+        initialState ? super(initialState) : super()
+    }
+}

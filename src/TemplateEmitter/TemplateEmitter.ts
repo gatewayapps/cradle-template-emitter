@@ -91,7 +91,6 @@ export class TemplateEmitter implements ICradleEmitter {
 
             return this.dataTypeMappings.values[typeName].type || typeName
         } catch (err) {
-            console.error(err)
             return typeName
         }
     }
@@ -104,7 +103,6 @@ export class TemplateEmitter implements ICradleEmitter {
 
             return this.dataTypeMappings.values[typeName].defaultValue !== undefined ? this.dataTypeMappings.values[typeName].defaultValue : typeName
         } catch (err) {
-            console.error(err)
             return typeName
         }
     }

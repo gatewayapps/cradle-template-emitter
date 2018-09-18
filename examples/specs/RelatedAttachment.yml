@@ -1,0 +1,11 @@
+RelatedAttachment:
+  properties:
+    photos:
+      isArray: true
+      modelRef: Attachment
+    attachments:
+      isArray: true
+      modelRef: Attachment
+    referenceId: string
+    name: string
+    sourceType: string allow("Property")

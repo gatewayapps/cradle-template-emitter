@@ -11,3 +11,35 @@ Assignment:
     comments:
       isArray: true
       modelRef: Comment
+    company:
+      modelRef: Company
+    contacts:
+      isArray: true
+      modelRef: AssociatedContact
+    deleted: boolean default(0) delete
+    dollarOpportunity: integer
+    dueDate: integer?
+    hasStarred: string[]
+    id: string
+    isComplete: boolean
+    label: string
+    lotSize: 
+      modelRef: Area
+    markup: string
+    markupState: string
+    mentions: string[]
+    priority: string allow("High", "Low", "Medium")
+    properties: 
+      isArray: true
+      modelRef: AssociatedProperty
+    relatedAttachments:
+      isArray: true
+      modelRef: RelatedAttachment
+    reminders:
+      isArray: true
+      modelRef: Reminder
+    source:
+      modelRef: AssignmentSource
+    tags: string[]
+    title: string
+

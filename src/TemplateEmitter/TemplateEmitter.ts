@@ -79,11 +79,18 @@ export class TemplateEmitter implements ICradleEmitter {
     }
 
     public formatDataContext(property: any) {
+        if (!property) {
+            return undefined
+        }
+
+        if (property.TypeName === 'Array') {
+            console.log(property.MemberType)
+        }
         return {
             AllowNull: property.AllowNull,
             DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
             IsPrimaryKey: property.IsPrimaryKey,
-            MemberType: property.MemberType,
+            MemberType: this.formatDataContext(property.MemberType),
             ModelName: property.ModelName,
             TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
             Unique: property.Unique

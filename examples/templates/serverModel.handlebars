@@ -1,7 +1,9 @@
 import { List, Record } from 'immutable'
 {{#each Properties as |prop|}}
 {{#isArray prop.TypeName}}
+{{#if prop.MemberType.ModelName}}
 import { I{{prop.MemberType.ModelName}}, {{prop.MemberType.ModelName}} } from './{{prop.MemberType.ModelName}}'
+{{/if}}
 {{/isArray}}
 {{#isObject prop}}
 import { I{{prop.ModelName}}, {{prop.ModelName}} } from './{{prop.ModelName}}'
@@ -12,7 +14,11 @@ export interface I{{Name}} {
     {{#each Properties as |prop|}}
     {{#if prop.AllowNull }}
     {{#isArray TypeName}}
+    {{#if prop.MemberType.ModelName}}
     readonly {{prop.Name}}?: List<I{{prop.MemberType.ModelName}}>
+    {{else}}
+    readonly {{prop.Name}}?: List<{{prop.MemberType.TypeName}}>
+    {{/if}}
     {{/isArray}}
     {{#isObject prop}}
     readonly {{prop.Name}}?: I{{prop.ModelName}}
@@ -22,7 +28,11 @@ export interface I{{Name}} {
     {{/isBaseDataType}}
     {{else}}
     {{#isArray TypeName}}
+    {{#if prop.MemberType.ModelName}}
     readonly {{prop.Name}}: List<I{{prop.MemberType.ModelName}}>
+    {{else}}
+    readonly {{prop.Name}}: List<{{prop.MemberType.TypeName}}>
+    {{/if}}
     {{/isArray}}
     {{#isObject prop}}
     readonly {{prop.Name}}: I{{prop.ModelName}}
@@ -40,7 +50,11 @@ const {{Name}}Record = Record({
     {{prop.Name}}: new {{prop.ModelName}}(),
     {{/if}}
     {{#isArray prop.TypeName}}
+    {{#if prop.MemberType.ModelName}}
     {{prop.Name}}: List<{{prop.MemberType.ModelName}}>(),
+    {{else}}
+    {{prop.Name}}: List<{{prop.MemberType.TypeName}}>(),
+    {{/if}}
     {{/isArray}}
     {{#isObject prop}}
     {{prop.Name}}: undefined,
@@ -59,7 +73,11 @@ export class {{Name}} extends {{Name}}Record implements I{{Name}} {
     {{#each Properties as |prop|}}
     {{#if prop.AllowNull }}
     {{#isArray TypeName}}
+    {{#if prop.MemberType.ModelName}}
     public readonly {{prop.Name}}?: List<{{prop.MemberType.ModelName}}>
+    {{else}}
+    public readonly {{prop.Name}}?: List<{{prop.MemberType.TypeName}}>
+    {{/if}}
     {{/isArray}}
     {{#isObject prop}}
     public readonly {{prop.Name}}?: {{prop.ModelName}}
@@ -69,7 +87,11 @@ export class {{Name}} extends {{Name}}Record implements I{{Name}} {
     {{/isBaseDataType}}
     {{else}}
     {{#isArray TypeName}}
+    {{#if prop.MemberType.ModelName}}
     public readonly {{prop.Name}}: List<{{prop.MemberType.ModelName}}>
+    {{else}}
+    public readonly {{prop.Name}}: List<{{prop.MemberType.TypeName}}>
+    {{/if}}
     {{/isArray}}
     {{#isObject prop}}
     public readonly {{prop.Name}}: {{prop.ModelName}}

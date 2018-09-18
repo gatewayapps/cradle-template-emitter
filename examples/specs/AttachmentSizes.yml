@@ -1,0 +1,12 @@
+AttachmentSizes:
+  properties:
+    h100w100: string?
+    h100w150: string?
+    h200w250: string?
+    h500: string?
+    h500w500: string?
+    h50w50: string?
+    h75w100: string?
+    original: string?
+    w500: string?
+    w750: string?

@@ -83,9 +83,6 @@ export class TemplateEmitter implements ICradleEmitter {
             return undefined
         }
 
-        if (property.TypeName === 'Array') {
-            console.log(property.MemberType)
-        }
         return {
             AllowNull: property.AllowNull,
             DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
@@ -144,6 +141,38 @@ export class TemplateEmitter implements ICradleEmitter {
 
         handlebars.registerHelper('isObject', (args, options) => {
             return (args.ModelName !== undefined) ? options.fn(this) : options.inverse(this)
+        })
+
+        handlebars.registerHelper('getDistinctObjects', (context, options) => {
+            const got: any = []
+
+            function contains(obj, a) {
+                for (const i of a) {
+                    if (obj.TypeName === 'Array' && i.TypeName === 'Array') {
+                        if (obj.MemberType.ModelName === i.MemberType.ModelName) {
+                            return true
+                        }
+                    } else if (obj.TypeName === 'Array' && i.TypeName !== 'Array') {
+                        if (obj.MemberType.ModelName === i.ModelName) {
+                            return true
+                        }
+                    } else if (obj.TypeName !== 'Array' && i.TypeName === 'Array') {
+                        if (obj.ModelName === i.MemberType.ModelName) {
+                            return true
+                        }
+                    }
+                }
+                return false
+            }
+
+            for (const c of context) {
+                if (c.TypeName === 'Array' || c.ModelName !== undefined) {
+                    if (!contains(c, got)) {
+                        got.push(c)
+                    }
+                }
+            }
+            return got
         })
     }
 }

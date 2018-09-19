@@ -1,12 +1,12 @@
 import { List, Record } from 'immutable'
-{{#each Properties as |prop|}}
-{{#isArray prop.TypeName}}
-{{#if prop.MemberType.ModelName}}
-import { I{{prop.MemberType.ModelName}}, {{prop.MemberType.ModelName}} } from './{{prop.MemberType.ModelName}}'
+{{#each (getDistinctObjects Properties) as |p|}}
+{{#isArray p.TypeName}}
+{{#if p.MemberType.ModelName}}
+import { I{{p.MemberType.ModelName}}, {{p.MemberType.ModelName}} } from './{{p.MemberType.ModelName}}'
 {{/if}}
 {{/isArray}}
-{{#isObject prop}}
-import { I{{prop.ModelName}}, {{prop.ModelName}} } from './{{prop.ModelName}}'
+{{#isObject p}}
+import { I{{p.ModelName}}, {{p.ModelName}} } from './{{p.ModelName}}'
 {{/isObject}}
 {{/each}}
 

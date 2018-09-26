@@ -36,7 +36,7 @@ export class TemplateEmitter implements ICradleEmitter {
             const outputFileFn = handlebars.compile(this.config.options.outputPath.split(path.sep).join('/'))
 
             // get language type based on output path file extension
-            this.languageType = this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
+            this.languageType = this.config.options.languageType || this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
 
             // get data type mappings based on language type
             this.dataTypeMappings = require(`./mappings/${this.languageType}/mapping.js`)
@@ -83,15 +83,33 @@ export class TemplateEmitter implements ICradleEmitter {
             return undefined
         }
 
-        return {
+        const context = {
             AllowNull: property.AllowNull,
             DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
             IsPrimaryKey: property.IsPrimaryKey,
             MemberType: this.formatDataContext(property.MemberType),
+            Members: [],
             ModelName: property.ModelName,
+            ModelType: this.formatDataContext(property.ModelType),
             TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
             Unique: property.Unique
         }
+
+        // handle formatting each member context if it exists
+        if (property.Members) {
+            for (const m in property.Members) {
+                if (!property.Members.hasOwnProperty(m)) {
+                    continue
+                }
+
+                const member = this.formatDataContext(property.Members[m])
+                member.Name = m
+
+                context.Members.push(member)
+            }
+        }
+
+        return context
     }
 
     public mapDataTypes(typeName: string): string {
@@ -172,6 +190,48 @@ export class TemplateEmitter implements ICradleEmitter {
                     }
                 }
             }
+            return got
+        })
+
+        handlebars.registerHelper('getReferences', (context, options) => {
+            const got: any = []
+
+            if (Object.keys(context).length === 0) {
+                return []
+            }
+
+            for (const c in context) {
+                if (!context.hasOwnProperty(c)) {
+                    continue
+                }
+
+                context[c].Name = c
+                got.push(context[c])
+            }
+
+            return got
+        })
+
+        handlebars.registerHelper('getObjectProps', (context, options) => {
+            const got: any = []
+
+            if (!context) {
+                return got
+            }
+
+            if (Object.keys(context).length === 0) {
+                return []
+            }
+
+            for (const c in context) {
+                if (!context.hasOwnProperty(c)) {
+                    continue
+                }
+
+                context[c].Name = c
+                got.push(context[c])
+            }
+
             return got
         })
     }

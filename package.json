@@ -21,11 +21,10 @@
   },
   "homepage": "https://github.com/gatewayapps/cradle-template-emitter#readme",
   "peerDependencies": {
-    "@gatewayapps/cradle": ">=0.0.10"
+    "@gatewayapps/cradle": ">=0.0.12"
   },
   "devDependencies": {
-    "@gatewayapps/cradle": "0.0.10",
-    "@types/dot": "^1.1.2",
+    "@gatewayapps/cradle": "0.0.12",
     "@types/fs-extra": "^5.0.4",
     "@types/handlebars": "^4.0.39",
     "@types/node": "^10.9.4",

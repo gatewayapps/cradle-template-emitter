@@ -5,5 +5,5 @@ export interface ITemplateEmitterOptions {
     readonly outputPath: string
     readonly overwriteExisting: boolean
     readonly languageType: string
-    readonly ignoreEmit: (meta: CradleModel) => boolean
+    readonly shouldEmit: (meta: CradleModel) => boolean
 }

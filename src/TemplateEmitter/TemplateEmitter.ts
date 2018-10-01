@@ -43,9 +43,9 @@ export class TemplateEmitter implements ICradleEmitter {
 
             // for each schema model, create an object and pass into the dot template generated function
             schema.Models.map((m) => {
-                if (this.config && this.config.options.ignoreEmit && {}.toString.call(this.config.options.ignoreEmit) === '[object Function]') {
-                    const ignore = this.config.options.ignoreEmit(m)
-                    if (ignore) {
+                if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
+                    const ignore = this.config.options.shouldEmit(m)
+                    if (!ignore) {
                         return
                     }
                 }

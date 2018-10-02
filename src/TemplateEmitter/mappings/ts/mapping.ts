@@ -1,22 +1,35 @@
 export const values = {
-    Boolean : {
-        defaultValue: false,
+    Boolean: {
+
         type: 'boolean',
     },
     DateTime: {
-        defaultValue: undefined,
+
         type: 'Date',
     },
     Decimal: {
-        defaultValue: 0,
+
         type: 'number'
     },
     Integer: {
-        defaultValue: 0,
+
         type: 'number',
     },
-    String : {
-        defaultValue: '\'\'',
+    String: {
+
         type: 'string',
+    }
+}
+
+export function convertValue(typeName: string, input: any): any {
+    switch (typeName) {
+        case 'DateTime': {
+            if (input === 'DateTimeNow') {
+                return 'new Date()'
+            } else {
+                return `new Date('${(input as Date).toISOString()}')`
+            }
+        }
+        default: return input
     }
 }

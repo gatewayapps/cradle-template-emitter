@@ -24,7 +24,7 @@ export class TemplateEmitter implements ICradleEmitter {
                 throw new Error('Template emitter options are required')
             }
 
-            const templateString = fs.readFileSync(this.config.options.sourcePath, {encoding: 'utf8'})
+            const templateString = fs.readFileSync(this.config.options.sourcePath, { encoding: 'utf8' })
 
             if (!templateString || templateString === '') {
                 throw new Error('There was a problem reading the template file')
@@ -41,42 +41,11 @@ export class TemplateEmitter implements ICradleEmitter {
             // get data type mappings based on language type
             this.dataTypeMappings = require(`./mappings/${this.languageType}/mapping.js`)
 
-            // for each schema model, create an object and pass into the dot template generated function
-            schema.Models.map((m) => {
-                if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
-                    const ignore = this.config.options.shouldEmit(m)
-                    if (!ignore) {
-                        return
-                    }
-                }
-
-                const props = {
-                    Meta: m.Meta,
-                    Name: m.Name,
-                    Properties: Object.keys(m.Properties).map((propertyName) => {
-                        return Object.assign({Name: propertyName}, this.formatDataContext(m.Properties[propertyName]))
-                    }),
-                    References: m.References
-                }
-
-                const content = fn(props)
-
-                const outputFullPath = path.resolve(process.cwd(), outputFileFn({ Name: m.Name }))
-                const outDir = path.dirname(outputFullPath)
-
-                fs.ensureDir(outDir).then(() => {
-                    const fileExists = fs.existsSync(outputFullPath)
-
-                    if (fileExists) {
-                        if (!this.config || !this.config.options.overwriteExisting) {
-                            console.log('Overwrite rules state no overwriting of existing file:', outputFullPath)
-                            return
-                        }
-                    }
-
-                    fs.writeFileSync(outputFullPath, content)
-                })
-            })
+            if (this.config.options.mode === 'schema') {
+                this.doEmitSchema(schema, fn, outputFileFn)
+            } else {
+                this.doEmitModels(schema, fn, outputFileFn)
+            }
 
         } catch (err) {
             console.log('Error')
@@ -245,6 +214,63 @@ export class TemplateEmitter implements ICradleEmitter {
             }
 
             return got
+        })
+    }
+
+    private doEmitSchema(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
+        const content = fn(schema)
+        const outputFullPath = path.resolve(process.cwd(), outputFileFn({}))
+        const outDir = path.dirname(outputFullPath)
+        fs.ensureDir(outDir).then(() => {
+            const fileExists = fs.existsSync(outputFullPath)
+
+            if (fileExists) {
+                if (!this.config || !this.config.options.overwriteExisting) {
+                    console.log('Overwrite rules state no overwriting of existing file:', outputFullPath)
+                    return
+                }
+            }
+
+            fs.writeFileSync(outputFullPath, content)
+        })
+    }
+
+    private doEmitModels(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
+        // for each schema model, create an object and pass into the dot template generated function
+        schema.Models.map((m) => {
+            if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
+                const ignore = this.config.options.shouldEmit(m)
+                if (!ignore) {
+                    return
+                }
+            }
+
+            const props = {
+                Meta: m.Meta,
+                Name: m.Name,
+                Properties: Object.keys(m.Properties).map((propertyName) => {
+                    return Object.assign({ Name: propertyName }, this.formatDataContext(m.Properties[propertyName]))
+                }),
+                References: m.References
+            }
+
+            const content = fn(props)
+
+            const outputFullPath = path.resolve(process.cwd(), outputFileFn({ Name: m.Name }))
+            const outDir = path.dirname(outputFullPath)
+
+            fs.ensureDir(outDir).then(() => {
+                const fileExists = fs.existsSync(outputFullPath)
+
+                if (fileExists) {
+                    if (!this.config || !this.config.options.overwriteExisting) {
+                        console.log('Overwrite rules state no overwriting of existing file:', outputFullPath)
+                        return
+                    }
+                }
+
+                fs.writeFileSync(outputFullPath, content)
+            })
         })
     }
 }

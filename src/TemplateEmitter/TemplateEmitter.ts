@@ -61,6 +61,7 @@ export class TemplateEmitter implements ICradleEmitter {
 
         const context = {
             AllowNull: property.AllowNull,
+            Autogenerate: property.Autogenerate,
             DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
             IsPrimaryKey: property.IsPrimaryKey,
             MemberType: this.formatDataContext(property.MemberType),
@@ -106,10 +107,10 @@ export class TemplateEmitter implements ICradleEmitter {
             if (!this.dataTypeMappings) {
                 return defaultValue
             }
+            return this.dataTypeMappings.convertValue(typeName, defaultValue)
 
-            return this.dataTypeMappings.values[typeName].defaultValue !== undefined ? this.dataTypeMappings.values[typeName].defaultValue : typeName
         } catch (err) {
-            return typeName
+            return defaultValue
         }
     }
 

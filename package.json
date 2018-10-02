@@ -1,5 +1,5 @@
 {
-  "name": "cradle-template-emitter",
+  "name": "@gatewayapps/cradle-template-emitter",
   "version": "0.1.0",
   "description": "Cradle emitter for reading doT based template files",
   "main": "./dist/index.js",

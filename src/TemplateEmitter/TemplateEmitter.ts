@@ -98,6 +98,7 @@ export class TemplateEmitter implements ICradleEmitter {
             Members: [],
             ModelName: property.ModelName,
             ModelType: this.formatDataContext(property.ModelType),
+            OriginalTypeName: property.TypeName,
             TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
             Unique: property.Unique
         }
@@ -166,6 +167,10 @@ export class TemplateEmitter implements ICradleEmitter {
 
         handlebars.registerHelper('isObject', (args, options) => {
             return (args.ModelName !== undefined) ? options.fn(this) : options.inverse(this)
+        })
+
+        handlebars.registerHelper('toLowerCase', (str) => {
+            return str.toLowerCase()
         })
 
         handlebars.registerHelper('getDistinctObjects', (context, options) => {

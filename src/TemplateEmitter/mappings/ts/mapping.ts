@@ -1,6 +1,6 @@
 export const values = {
     Boolean : {
-        defaultValue: 'false',
+        defaultValue: false,
         type: 'boolean',
     },
     DateTime: {
@@ -8,11 +8,11 @@ export const values = {
         type: 'Date',
     },
     Decimal: {
-        defaultValue: '0',
+        defaultValue: 0,
         type: 'number'
     },
     Integer: {
-        defaultValue: '0',
+        defaultValue: 0,
         type: 'number',
     },
     String : {

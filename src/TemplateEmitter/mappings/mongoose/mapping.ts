@@ -1,18 +1,18 @@
 export const values = {
     Boolean : {
-        defaultValue: 'false',
+        defaultValue: false,
         type: 'Schema.Types.Boolean',
     },
     DateTime: {
-        defaultValue: undefined,
+        defaultValue: 'Date.now',
         type: 'Schema.Types.Date',
     },
     Decimal: {
-        defaultValue: '0',
+        defaultValue: 0,
         type: 'Schema.Types.Number'
     },
     Integer: {
-        defaultValue: '0',
+        defaultValue: 0,
         type: 'Schema.Types.Number',
     },
     String : {

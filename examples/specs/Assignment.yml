@@ -1,4 +1,6 @@
 Assignment:
+  meta:
+    topLevel: true
   properties:
     assignedTo:
       isArray: true

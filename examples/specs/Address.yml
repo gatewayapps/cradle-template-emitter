@@ -1,4 +1,6 @@
 Address:
+  meta:
+    topLevel: true
   properties:
     addressIndex: integer
     attention: string

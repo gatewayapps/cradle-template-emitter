@@ -219,7 +219,21 @@ export class TemplateEmitter implements ICradleEmitter {
     }
 
     private doEmitSchema(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
-        const content = fn(schema)
+        let models: any = []
+        models = schema.Models.filter((m) => {
+            if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
+                const shouldEmit = this.config.options.shouldEmit(m)
+                if (shouldEmit) {
+                    return m
+                }
+            } else {
+                return m
+            }
+        })
+
+        const s = new CradleSchema(models)
+        const content = fn(s)
+
         const outputFullPath = path.resolve(process.cwd(), outputFileFn({}))
         const outDir = path.dirname(outputFullPath)
         fs.ensureDir(outDir).then(() => {

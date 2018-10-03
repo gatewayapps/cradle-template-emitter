@@ -1,4 +1,6 @@
 ActivityFeedItem:
+  meta:
+    topLevel: true
   properties:
     dateCreated: integer
     id: string

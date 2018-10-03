@@ -7,4 +7,5 @@ export interface ITemplateEmitterOptions {
     readonly mode: string
     readonly languageType: string
     readonly shouldEmit: (meta: CradleModel) => boolean
+    readonly onFileEmitted: (path: string) => any
 }

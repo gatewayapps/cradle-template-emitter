@@ -11,6 +11,7 @@ export class TemplateEmitter implements ICradleEmitter {
     public dataTypeMappings?: any
     public languageType?: string
 
+    private void
     public prepareEmitter(options: IEmitterOptions, console: IConsole) {
         this.config = options
         this.console = console
@@ -217,6 +218,21 @@ export class TemplateEmitter implements ICradleEmitter {
             return got
         })
     }
+    public writeFileContents(filePath: string, content: string) {
+        const fileExists = fs.existsSync(filePath)
+
+        if (fileExists) {
+            if (!this.config || !this.config.options.overwriteExisting) {
+                console.log('Overwrite rules state no overwriting of existing file:', filePath)
+                return
+            }
+        }
+
+        fs.writeFileSync(filePath, content)
+        if (this.config!.options.onFileEmitted) {
+            this.config!.options.onFileEmitted(filePath)
+        }
+    }
 
     private doEmitSchema(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
         let models: any = []
@@ -237,16 +253,7 @@ export class TemplateEmitter implements ICradleEmitter {
         const outputFullPath = path.resolve(process.cwd(), outputFileFn({}))
         const outDir = path.dirname(outputFullPath)
         fs.ensureDir(outDir).then(() => {
-            const fileExists = fs.existsSync(outputFullPath)
-
-            if (fileExists) {
-                if (!this.config || !this.config.options.overwriteExisting) {
-                    console.log('Overwrite rules state no overwriting of existing file:', outputFullPath)
-                    return
-                }
-            }
-
-            fs.writeFileSync(outputFullPath, content)
+            this.writeFileContents(outputFullPath, content)
         })
     }
 
@@ -275,16 +282,7 @@ export class TemplateEmitter implements ICradleEmitter {
             const outDir = path.dirname(outputFullPath)
 
             fs.ensureDir(outDir).then(() => {
-                const fileExists = fs.existsSync(outputFullPath)
-
-                if (fileExists) {
-                    if (!this.config || !this.config.options.overwriteExisting) {
-                        console.log('Overwrite rules state no overwriting of existing file:', outputFullPath)
-                        return
-                    }
-                }
-
-                fs.writeFileSync(outputFullPath, content)
+                this.writeFileContents(outputFullPath, content)
             })
         })
     }

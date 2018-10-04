@@ -1,4 +1,5 @@
 import { CradleModel } from '@gatewayapps/cradle'
+import { HelperDelegate } from 'handlebars'
 
 export interface ITemplateEmitterOptions {
     readonly sourcePath: string
@@ -6,6 +7,7 @@ export interface ITemplateEmitterOptions {
     readonly overwriteExisting: boolean
     readonly mode: string
     readonly languageType: string
+    readonly registerCustomHelpers?: (register: (name: string, fn: HelperDelegate) => void) => void
     readonly shouldEmit: (meta: CradleModel) => boolean
     readonly onFileEmitted: (path: string) => any
 }

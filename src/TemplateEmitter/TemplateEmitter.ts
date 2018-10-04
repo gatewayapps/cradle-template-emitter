@@ -195,6 +195,26 @@ export class TemplateEmitter implements ICradleEmitter {
             return got
         })
 
+        handlebars.registerHelper('getDistinctForeignModels', (context, options) => {
+            const got: any[] = []
+
+            if (!context || Object.keys(context).length === 0) {
+                return []
+            }
+
+            for (const c in context) {
+                const ref = context[c]
+                if (!ref.ForeignModel) {
+                    continue
+                }
+                if (got.indexOf(ref.ForeignModel) === -1) {
+                    got.push(ref.ForeignModel)
+                }
+            }
+
+            return got
+        })
+
         handlebars.registerHelper('getObjectProps', (context, options) => {
             const got: any = []
 
@@ -217,6 +237,11 @@ export class TemplateEmitter implements ICradleEmitter {
 
             return got
         })
+
+        if (this.config && this.config.options.registerCustomHelpers) {
+            const register = handlebars.registerHelper.bind(handlebars)
+            this.config.options.registerCustomHelpers(register)
+        }
     }
     public writeFileContents(filePath: string, content: string) {
         const fileExists = fs.existsSync(filePath)

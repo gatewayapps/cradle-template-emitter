@@ -10,4 +10,5 @@ export interface ITemplateEmitterOptions {
     readonly registerCustomHelpers?: (register: (name: string, fn: HelperDelegate) => void) => void
     readonly shouldEmit: (meta: CradleModel) => boolean
     readonly onFileEmitted: (path: string) => any
+    readonly onFilesEmitted: (paths: string[]) => any
 }

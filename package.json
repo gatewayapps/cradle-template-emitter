@@ -1,6 +1,6 @@
 {
   "name": "@gatewayapps/cradle-template-emitter",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "Cradle emitter for reading Handlebars based template files",
   "main": "./dist/index.js",
   "scripts": {
@@ -29,6 +29,8 @@
     "@types/fs-extra": "^5.0.4",
     "@types/handlebars": "^4.0.39",
     "@types/node": "^10.9.4",
+    "prettier": "^1.14.3",
+    "prettier-tslint": "^0.4.0",
     "tslint": "^5.11.0",
     "typescript": "^3.0.3"
   },

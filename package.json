@@ -1,6 +1,6 @@
 {
   "name": "@gatewayapps/cradle-template-emitter",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Cradle emitter for reading Handlebars based template files",
   "main": "./dist/index.js",
   "scripts": {

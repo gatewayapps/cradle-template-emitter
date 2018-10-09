@@ -6,309 +6,327 @@ import * as path from 'path'
 import { ITemplateEmitterOptions } from './ITemplateEmitterOptions'
 
 export class TemplateEmitter implements ICradleEmitter {
-    public config?: EmitterOptions<ITemplateEmitterOptions>
-    public console?: IConsole
-    public dataTypeMappings?: any
-    public languageType?: string
+  public config?: EmitterOptions<ITemplateEmitterOptions>
+  public console?: IConsole
+  public dataTypeMappings?: any
+  public languageType?: string
 
-    private void
-    public prepareEmitter(options: IEmitterOptions, console: IConsole) {
-        this.config = options
-        this.console = console
-        this.dataTypeMappings = undefined
-        this.languageType = ''
+  private void
+  public prepareEmitter(options: IEmitterOptions, console: IConsole) {
+    this.config = options
+    this.console = console
+    this.dataTypeMappings = undefined
+    this.languageType = ''
+  }
+
+  public async emitSchema(schema: CradleSchema) {
+    try {
+      if (!this.config || !this.config.options) {
+        throw new Error('Template emitter options are required')
+      }
+
+      const templateString = fs.readFileSync(this.config.options.sourcePath, {
+        encoding: 'utf8'
+      })
+
+      if (!templateString || templateString === '') {
+        throw new Error('There was a problem reading the template file')
+      }
+
+      this.registerHandlebarsHelperMethods()
+
+      const fn = handlebars.compile(templateString)
+      const outputFileFn = handlebars.compile(this.config.options.outputPath.split(path.sep).join('/'))
+
+      // get language type based on output path file extension
+      this.languageType = this.config.options.languageType || this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
+
+      // get data type mappings based on language type
+      this.dataTypeMappings = require(`./mappings/${this.languageType}/mapping.js`)
+
+      if (this.config.options.mode === 'schema') {
+        const filesWritten = await this.doEmitSchema(schema, fn, outputFileFn)
+        if (this.config.options.onFilesEmitted) {
+          this.config.options.onFilesEmitted(filesWritten)
+        }
+      } else {
+        const filesWritten = await this.doEmitModels(schema, fn, outputFileFn)
+        if (this.config.options.onFilesEmitted) {
+          this.config.options.onFilesEmitted(filesWritten)
+        }
+      }
+    } catch (err) {
+      console.log('Error')
+      console.error(err)
+      throw new Error(err)
+    }
+  }
+
+  public formatDataContext(property: any) {
+    if (!property) {
+      return undefined
     }
 
-    public emitSchema(schema: CradleSchema) {
-        try {
-            if (!this.config || !this.config.options) {
-                throw new Error('Template emitter options are required')
-            }
-
-            const templateString = fs.readFileSync(this.config.options.sourcePath, { encoding: 'utf8' })
-
-            if (!templateString || templateString === '') {
-                throw new Error('There was a problem reading the template file')
-            }
-
-            this.registerHandlebarsHelperMethods()
-
-            const fn = handlebars.compile(templateString)
-            const outputFileFn = handlebars.compile(this.config.options.outputPath.split(path.sep).join('/'))
-
-            // get language type based on output path file extension
-            this.languageType = this.config.options.languageType || this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
-
-            // get data type mappings based on language type
-            this.dataTypeMappings = require(`./mappings/${this.languageType}/mapping.js`)
-
-            if (this.config.options.mode === 'schema') {
-                this.doEmitSchema(schema, fn, outputFileFn)
-            } else {
-                this.doEmitModels(schema, fn, outputFileFn)
-            }
-
-        } catch (err) {
-            console.log('Error')
-            console.error(err)
-            throw new Error(err)
-        }
+    const context = {
+      AllowNull: property.AllowNull,
+      Autogenerate: property.Autogenerate,
+      DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
+      IsPrimaryKey: property.IsPrimaryKey,
+      MemberType: this.formatDataContext(property.MemberType),
+      Members: [],
+      ModelName: property.ModelName,
+      ModelType: this.formatDataContext(property.ModelType),
+      OriginalTypeName: property.TypeName,
+      TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
+      Unique: property.Unique
     }
 
-    public formatDataContext(property: any) {
-        if (!property) {
-            return undefined
+    // handle formatting each member context if it exists
+    if (property.Members) {
+      for (const m in property.Members) {
+        if (!property.Members.hasOwnProperty(m)) {
+          continue
         }
 
-        const context = {
-            AllowNull: property.AllowNull,
-            Autogenerate: property.Autogenerate,
-            DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
-            IsPrimaryKey: property.IsPrimaryKey,
-            MemberType: this.formatDataContext(property.MemberType),
-            Members: [],
-            ModelName: property.ModelName,
-            ModelType: this.formatDataContext(property.ModelType),
-            OriginalTypeName: property.TypeName,
-            TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
-            Unique: property.Unique
-        }
+        const member = this.formatDataContext(property.Members[m])
+        member.Name = m
 
-        // handle formatting each member context if it exists
-        if (property.Members) {
-            for (const m in property.Members) {
-                if (!property.Members.hasOwnProperty(m)) {
-                    continue
-                }
-
-                const member = this.formatDataContext(property.Members[m])
-                member.Name = m
-
-                context.Members.push(member)
-            }
-        }
-
-        return context
+        context.Members.push(member)
+      }
     }
 
-    public mapDataTypes(typeName: string): string {
-        try {
-            if (!this.dataTypeMappings) {
-                return typeName
-            }
+    return context
+  }
 
-            return this.dataTypeMappings.values[typeName].type || typeName
-        } catch (err) {
-            return typeName
+  public mapDataTypes(typeName: string): string {
+    try {
+      if (!this.dataTypeMappings) {
+        return typeName
+      }
+
+      return this.dataTypeMappings.values[typeName].type || typeName
+    } catch (err) {
+      return typeName
+    }
+  }
+
+  public mapDefaultValues(typeName: string, defaultValue: any) {
+    try {
+      if (!this.dataTypeMappings) {
+        return defaultValue
+      }
+      return this.dataTypeMappings.convertValue(typeName, defaultValue)
+    } catch (err) {
+      return defaultValue
+    }
+  }
+
+  public registerHandlebarsHelperMethods() {
+    handlebars.registerHelper('ifEquals', (arg1, arg2, options) => {
+      return arg1 === arg2 ? options.fn(this) : options.inverse(this)
+    })
+
+    handlebars.registerHelper('ifNotEquals', (arg1, arg2, options) => {
+      return arg1 !== arg2 ? options.fn(this) : options.inverse(this)
+    })
+
+    handlebars.registerHelper('isArray', (arg1, options) => {
+      return arg1 === 'Array' ? options.fn(this) : options.inverse(this)
+    })
+
+    handlebars.registerHelper('isNotArray', (arg1, options) => {
+      return arg1 !== 'Array' ? options.fn(this) : options.inverse(this)
+    })
+
+    handlebars.registerHelper('isBaseDataType', (args, options) => {
+      return args.TypeName !== 'Array' && !args.ModelName ? options.fn(this) : options.inverse(this)
+    })
+
+    handlebars.registerHelper('isObject', (args, options) => {
+      return args.ModelName !== undefined ? options.fn(this) : options.inverse(this)
+    })
+
+    handlebars.registerHelper('toLowerCase', (str) => {
+      return str.toLowerCase()
+    })
+
+    handlebars.registerHelper('getDistinctObjects', (context, options) => {
+      const got: any = []
+
+      function contains(obj, a) {
+        for (const i of a) {
+          if (obj.TypeName === 'Array' && i.TypeName === 'Array') {
+            if (obj.MemberType.ModelName === i.MemberType.ModelName) {
+              return true
+            }
+          } else if (obj.TypeName === 'Array' && i.TypeName !== 'Array') {
+            if (obj.MemberType.ModelName === i.ModelName) {
+              return true
+            }
+          } else if (obj.TypeName !== 'Array' && i.TypeName === 'Array') {
+            if (obj.ModelName === i.MemberType.ModelName) {
+              return true
+            }
+          }
         }
+        return false
+      }
+
+      for (const c of context) {
+        if (c.TypeName === 'Array' || c.ModelName !== undefined) {
+          if (!contains(c, got)) {
+            got.push(c)
+          }
+        }
+      }
+      return got
+    })
+
+    handlebars.registerHelper('getReferences', (context, options) => {
+      const got: any = []
+
+      if (Object.keys(context).length === 0) {
+        return []
+      }
+
+      for (const c in context) {
+        if (!context.hasOwnProperty(c)) {
+          continue
+        }
+
+        context[c].Name = c
+        got.push(context[c])
+      }
+
+      return got
+    })
+
+    handlebars.registerHelper('getDistinctForeignModels', (context, options) => {
+      const got: any[] = []
+
+      if (!context || Object.keys(context).length === 0) {
+        return []
+      }
+
+      for (const c in context) {
+        const ref = context[c]
+        if (!ref.ForeignModel) {
+          continue
+        }
+        if (got.indexOf(ref.ForeignModel) === -1) {
+          got.push(ref.ForeignModel)
+        }
+      }
+
+      return got
+    })
+
+    handlebars.registerHelper('getObjectProps', (context, options) => {
+      const got: any = []
+
+      if (!context) {
+        return got
+      }
+
+      if (Object.keys(context).length === 0) {
+        return []
+      }
+
+      for (const c in context) {
+        if (!context.hasOwnProperty(c)) {
+          continue
+        }
+
+        context[c].Name = c
+        got.push(context[c])
+      }
+
+      return got
+    })
+
+    if (this.config && this.config.options.registerCustomHelpers) {
+      const register = handlebars.registerHelper.bind(handlebars)
+      this.config.options.registerCustomHelpers(register)
+    }
+  }
+  public writeFileContents(filePath: string, content: string): boolean {
+    const fileExists = fs.existsSync(filePath)
+
+    if (fileExists) {
+      if (!this.config || !this.config.options.overwriteExisting) {
+        console.log('Overwrite rules state no overwriting of existing file:', filePath)
+        return false
+      }
     }
 
-    public mapDefaultValues(typeName: string, defaultValue: any) {
-        try {
-            if (!this.dataTypeMappings) {
-                return defaultValue
-            }
-            return this.dataTypeMappings.convertValue(typeName, defaultValue)
-
-        } catch (err) {
-            return defaultValue
-        }
+    fs.writeFileSync(filePath, content)
+    if (this.config!.options.onFileEmitted) {
+      this.config!.options.onFileEmitted(filePath)
     }
+    return true
+  }
 
-    public registerHandlebarsHelperMethods() {
-        handlebars.registerHelper('ifEquals', (arg1, arg2, options) => {
-            return (arg1 === arg2) ? options.fn(this) : options.inverse(this)
-        })
-
-        handlebars.registerHelper('ifNotEquals', (arg1, arg2, options) => {
-            return (arg1 !== arg2) ? options.fn(this) : options.inverse(this)
-        })
-
-        handlebars.registerHelper('isArray', (arg1, options) => {
-            return (arg1 === 'Array') ? options.fn(this) : options.inverse(this)
-        })
-
-        handlebars.registerHelper('isNotArray', (arg1, options) => {
-            return (arg1 !== 'Array') ? options.fn(this) : options.inverse(this)
-        })
-
-        handlebars.registerHelper('isBaseDataType', (args, options) => {
-            return (args.TypeName !== 'Array' && !args.ModelName) ? options.fn(this) : options.inverse(this)
-        })
-
-        handlebars.registerHelper('isObject', (args, options) => {
-            return (args.ModelName !== undefined) ? options.fn(this) : options.inverse(this)
-        })
-
-        handlebars.registerHelper('toLowerCase', (str) => {
-            return str.toLowerCase()
-        })
-
-        handlebars.registerHelper('getDistinctObjects', (context, options) => {
-            const got: any = []
-
-            function contains(obj, a) {
-                for (const i of a) {
-                    if (obj.TypeName === 'Array' && i.TypeName === 'Array') {
-                        if (obj.MemberType.ModelName === i.MemberType.ModelName) {
-                            return true
-                        }
-                    } else if (obj.TypeName === 'Array' && i.TypeName !== 'Array') {
-                        if (obj.MemberType.ModelName === i.ModelName) {
-                            return true
-                        }
-                    } else if (obj.TypeName !== 'Array' && i.TypeName === 'Array') {
-                        if (obj.ModelName === i.MemberType.ModelName) {
-                            return true
-                        }
-                    }
-                }
-                return false
-            }
-
-            for (const c of context) {
-                if (c.TypeName === 'Array' || c.ModelName !== undefined) {
-                    if (!contains(c, got)) {
-                        got.push(c)
-                    }
-                }
-            }
-            return got
-        })
-
-        handlebars.registerHelper('getReferences', (context, options) => {
-            const got: any = []
-
-            if (Object.keys(context).length === 0) {
-                return []
-            }
-
-            for (const c in context) {
-                if (!context.hasOwnProperty(c)) {
-                    continue
-                }
-
-                context[c].Name = c
-                got.push(context[c])
-            }
-
-            return got
-        })
-
-        handlebars.registerHelper('getDistinctForeignModels', (context, options) => {
-            const got: any[] = []
-
-            if (!context || Object.keys(context).length === 0) {
-                return []
-            }
-
-            for (const c in context) {
-                const ref = context[c]
-                if (!ref.ForeignModel) {
-                    continue
-                }
-                if (got.indexOf(ref.ForeignModel) === -1) {
-                    got.push(ref.ForeignModel)
-                }
-            }
-
-            return got
-        })
-
-        handlebars.registerHelper('getObjectProps', (context, options) => {
-            const got: any = []
-
-            if (!context) {
-                return got
-            }
-
-            if (Object.keys(context).length === 0) {
-                return []
-            }
-
-            for (const c in context) {
-                if (!context.hasOwnProperty(c)) {
-                    continue
-                }
-
-                context[c].Name = c
-                got.push(context[c])
-            }
-
-            return got
-        })
-
-        if (this.config && this.config.options.registerCustomHelpers) {
-            const register = handlebars.registerHelper.bind(handlebars)
-            this.config.options.registerCustomHelpers(register)
+  private async doEmitSchema(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
+    let models: any = []
+    models = schema.Models.filter((m) => {
+      if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
+        const shouldEmit = this.config.options.shouldEmit(m)
+        if (shouldEmit) {
+          return m
         }
+      } else {
+        return m
+      }
+    })
+
+    const s = new CradleSchema(models)
+    const content = fn(s)
+
+    const outputFullPath = path.resolve(process.cwd(), outputFileFn({}))
+    const outDir = path.dirname(outputFullPath)
+    const shouldReturnFile = await fs.ensureDir(outDir).then(() => {
+      return this.writeFileContents(outputFullPath, content)
+    })
+
+    if (shouldReturnFile) {
+      return [outputFullPath]
+    } else {
+      return []
     }
-    public writeFileContents(filePath: string, content: string) {
-        const fileExists = fs.existsSync(filePath)
+  }
 
-        if (fileExists) {
-            if (!this.config || !this.config.options.overwriteExisting) {
-                console.log('Overwrite rules state no overwriting of existing file:', filePath)
-                return
-            }
+  private async doEmitModels(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
+    // for each schema model, create an object and pass into the dot template generated function
+    const results: string[] = []
+    await Promise.all(
+      schema.Models.map(async (m) => {
+        if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
+          const ignore = this.config.options.shouldEmit(m)
+          if (!ignore) {
+            return
+          }
         }
 
-        fs.writeFileSync(filePath, content)
-        if (this.config!.options.onFileEmitted) {
-            this.config!.options.onFileEmitted(filePath)
+        const props = {
+          Meta: m.Meta,
+          Name: m.Name,
+          Properties: Object.keys(m.Properties).map((propertyName) => {
+            return Object.assign({ Name: propertyName }, this.formatDataContext(m.Properties[propertyName]))
+          }),
+          References: m.References
         }
-    }
 
-    private doEmitSchema(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
-        let models: any = []
-        models = schema.Models.filter((m) => {
-            if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
-                const shouldEmit = this.config.options.shouldEmit(m)
-                if (shouldEmit) {
-                    return m
-                }
-            } else {
-                return m
-            }
-        })
+        const content = fn(props)
 
-        const s = new CradleSchema(models)
-        const content = fn(s)
-
-        const outputFullPath = path.resolve(process.cwd(), outputFileFn({}))
+        const outputFullPath = path.resolve(process.cwd(), outputFileFn({ Name: m.Name }))
         const outDir = path.dirname(outputFullPath)
-        fs.ensureDir(outDir).then(() => {
-            this.writeFileContents(outputFullPath, content)
-        })
-    }
 
-    private doEmitModels(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
-        // for each schema model, create an object and pass into the dot template generated function
-        schema.Models.map((m) => {
-            if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
-                const ignore = this.config.options.shouldEmit(m)
-                if (!ignore) {
-                    return
-                }
-            }
-
-            const props = {
-                Meta: m.Meta,
-                Name: m.Name,
-                Properties: Object.keys(m.Properties).map((propertyName) => {
-                    return Object.assign({ Name: propertyName }, this.formatDataContext(m.Properties[propertyName]))
-                }),
-                References: m.References
-            }
-
-            const content = fn(props)
-
-            const outputFullPath = path.resolve(process.cwd(), outputFileFn({ Name: m.Name }))
-            const outDir = path.dirname(outputFullPath)
-
-            fs.ensureDir(outDir).then(() => {
-                this.writeFileContents(outputFullPath, content)
-            })
-        })
-    }
+        const shouldAddFile = await fs.ensureDir(outDir).then(() => this.writeFileContents(outputFullPath, content))
+        if (shouldAddFile) {
+          results.push(outputFullPath)
+        }
+      })
+    )
+    return results
+  }
 }

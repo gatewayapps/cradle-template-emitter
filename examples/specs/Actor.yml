@@ -1,0 +1,6 @@
+Actor:
+  properties:
+    dateOfBirth: datetime default(NOW)
+    firstName: string(100) default('')
+    id: integer primary auto(1,1) default(0)
+    lastName: string(100) default('')

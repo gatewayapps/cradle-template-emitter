@@ -1,4 +1,0 @@
-CommentEditState:
-  properties:
-    isPublic: boolean
-    markupState: string

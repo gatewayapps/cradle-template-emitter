@@ -1,4 +1,0 @@
-Area:
-  properties:
-    lotSize: decimal
-    units: string allow("SqFt", "Acres")

@@ -1,7 +1,0 @@
-Reminder:
-  properties:
-    id: string
-    number: integer
-    period: string allow("Days", "Weeks")
-    status: string allow("Unsent", "Sent")
-    dateSent: string

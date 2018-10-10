@@ -1,5 +1,0 @@
-AssociatedContact:
-  properties:
-    contactId: string
-    isCompany: boolean
-    name: string

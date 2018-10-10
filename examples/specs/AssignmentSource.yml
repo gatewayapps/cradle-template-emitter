@@ -1,5 +1,0 @@
-AssignmentSource:
-  properties:
-    name: string
-    sourceId: string
-    type: string allow("FeedItem", "BrokeragePipeline")

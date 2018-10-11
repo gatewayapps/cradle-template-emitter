@@ -4,6 +4,7 @@ import * as fs from 'fs-extra'
 import * as handlebars from 'handlebars'
 import * as path from 'path'
 import { ITemplateEmitterOptions } from './ITemplateEmitterOptions'
+import { getLanguageType, mapDataTypes, mapDefaultValues, registerHandlebarsHelperMethods } from './utils'
 
 export class TemplateEmitter implements ICradleEmitter {
   public config?: EmitterOptions<ITemplateEmitterOptions>
@@ -33,13 +34,17 @@ export class TemplateEmitter implements ICradleEmitter {
         throw new Error('There was a problem reading the template file')
       }
 
-      this.registerHandlebarsHelperMethods()
+      this.registerHelperMethods()
 
       const fn = handlebars.compile(templateString)
       const outputFileFn = handlebars.compile(this.config.options.outputPath.split(path.sep).join('/'))
 
       // get language type based on output path file extension
-      this.languageType = this.config.options.languageType || this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
+      this.languageType = getLanguageType(this.config.options.languageType, this.config.options.outputPath)
+
+      if (!this.languageType) {
+        throw new Error('Cannot determine the language type to output. The output path may be malformed')
+      }
 
       // get data type mappings based on language type
       this.dataTypeMappings = require(`./mappings/${this.languageType}/mapping.js`)
@@ -70,7 +75,7 @@ export class TemplateEmitter implements ICradleEmitter {
     const context = {
       AllowNull: property.AllowNull,
       Autogenerate: property.Autogenerate,
-      DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
+      DefaultValue: mapDefaultValues(property.TypeName, property.DefaultValue, this.dataTypeMappings),
       IsPrimaryKey: property.IsPrimaryKey,
       MaximumValue: property.MaximumValue,
       MemberType: this.formatDataContext(property.MemberType),
@@ -79,7 +84,7 @@ export class TemplateEmitter implements ICradleEmitter {
       ModelName: property.ModelName,
       ModelType: this.formatDataContext(property.ModelType),
       OriginalTypeName: property.TypeName,
-      TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
+      TypeName: property.ModelName || mapDataTypes(property.TypeName, this.dataTypeMappings),
       Unique: property.Unique
     }
 
@@ -100,157 +105,6 @@ export class TemplateEmitter implements ICradleEmitter {
     return context
   }
 
-  public mapDataTypes(typeName: string): string {
-    try {
-      if (!this.dataTypeMappings) {
-        return typeName
-      }
-
-      return this.dataTypeMappings.values[typeName].type || typeName
-    } catch (err) {
-      return typeName
-    }
-  }
-
-  public mapDefaultValues(typeName: string, defaultValue: any) {
-    try {
-      if (!this.dataTypeMappings) {
-        return defaultValue
-      }
-      return this.dataTypeMappings.convertValue(typeName, defaultValue)
-    } catch (err) {
-      return defaultValue
-    }
-  }
-
-  public registerHandlebarsHelperMethods() {
-    handlebars.registerHelper('ifEquals', (arg1, arg2, options) => {
-      return arg1 === arg2 ? options.fn(this) : options.inverse(this)
-    })
-
-    handlebars.registerHelper('ifNotEquals', (arg1, arg2, options) => {
-      return arg1 !== arg2 ? options.fn(this) : options.inverse(this)
-    })
-
-    handlebars.registerHelper('isArray', (arg1, options) => {
-      return arg1 === 'Array' ? options.fn(this) : options.inverse(this)
-    })
-
-    handlebars.registerHelper('isNotArray', (arg1, options) => {
-      return arg1 !== 'Array' ? options.fn(this) : options.inverse(this)
-    })
-
-    handlebars.registerHelper('isBaseDataType', (args, options) => {
-      return args.TypeName !== 'Array' && !args.ModelName ? options.fn(this) : options.inverse(this)
-    })
-
-    handlebars.registerHelper('isObject', (args, options) => {
-      return args.ModelName !== undefined ? options.fn(this) : options.inverse(this)
-    })
-
-    handlebars.registerHelper('toLowerCase', (str) => {
-      return str.toLowerCase()
-    })
-
-    handlebars.registerHelper('getDistinctObjects', (context, options) => {
-      const got: any = []
-
-      function contains(obj, a) {
-        for (const i of a) {
-          if (obj.TypeName === 'Array' && i.TypeName === 'Array') {
-            if (obj.MemberType.ModelName === i.MemberType.ModelName) {
-              return true
-            }
-          } else if (obj.TypeName === 'Array' && i.TypeName !== 'Array') {
-            if (obj.MemberType.ModelName === i.ModelName) {
-              return true
-            }
-          } else if (obj.TypeName !== 'Array' && i.TypeName === 'Array') {
-            if (obj.ModelName === i.MemberType.ModelName) {
-              return true
-            }
-          }
-        }
-        return false
-      }
-
-      for (const c of context) {
-        if (c.TypeName === 'Array' || c.ModelName !== undefined) {
-          if (!contains(c, got)) {
-            got.push(c)
-          }
-        }
-      }
-      return got
-    })
-
-    handlebars.registerHelper('getReferences', (context, options) => {
-      const got: any = []
-
-      if (Object.keys(context).length === 0) {
-        return []
-      }
-
-      for (const c in context) {
-        if (!context.hasOwnProperty(c)) {
-          continue
-        }
-
-        context[c].Name = c
-        got.push(context[c])
-      }
-
-      return got
-    })
-
-    handlebars.registerHelper('getDistinctForeignModels', (context, options) => {
-      const got: any[] = []
-
-      if (!context || Object.keys(context).length === 0) {
-        return []
-      }
-
-      for (const c in context) {
-        const ref = context[c]
-        if (!ref.ForeignModel) {
-          continue
-        }
-        if (got.indexOf(ref.ForeignModel) === -1) {
-          got.push(ref.ForeignModel)
-        }
-      }
-
-      return got
-    })
-
-    handlebars.registerHelper('getObjectProps', (context, options) => {
-      const got: any = []
-
-      if (!context) {
-        return got
-      }
-
-      if (Object.keys(context).length === 0) {
-        return []
-      }
-
-      for (const c in context) {
-        if (!context.hasOwnProperty(c)) {
-          continue
-        }
-
-        context[c].Name = c
-        got.push(context[c])
-      }
-
-      return got
-    })
-
-    if (this.config && this.config.options.registerCustomHelpers) {
-      const register = handlebars.registerHelper.bind(handlebars)
-      this.config.options.registerCustomHelpers(register)
-    }
-  }
   public writeFileContents(filePath: string, content: string): boolean {
     const fileExists = fs.existsSync(filePath)
 
@@ -330,5 +184,135 @@ export class TemplateEmitter implements ICradleEmitter {
       })
     )
     return results
+  }
+
+  private registerHelperMethods() {
+    registerHandlebarsHelperMethods(handlebars, 'ifEquals', (arg1, arg2, options) => {
+      return arg1 === arg2 ? options.fn(this) : options.inverse(this)
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'ifNotEquals', (arg1, arg2, options) => {
+      return arg1 !== arg2 ? options.fn(this) : options.inverse(this)
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'isArray', (arg1, options) => {
+      return arg1 === 'Array' ? options.fn(this) : options.inverse(this)
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'isNotArray', (arg1, options) => {
+      return arg1 !== 'Array' ? options.fn(this) : options.inverse(this)
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'isBaseDataType', (args, options) => {
+      return args.TypeName !== 'Array' && !args.ModelName ? options.fn(this) : options.inverse(this)
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'isObject', (args, options) => {
+      return args.ModelName !== undefined ? options.fn(this) : options.inverse(this)
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'toLowerCase', (str) => {
+      return str.toLowerCase()
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'getDistinctObjects', (context, options) => {
+      const got: any = []
+
+      function contains(obj, a) {
+        for (const i of a) {
+          if (obj.TypeName === 'Array' && i.TypeName === 'Array') {
+            if (obj.MemberType.ModelName === i.MemberType.ModelName) {
+              return true
+            }
+          } else if (obj.TypeName === 'Array' && i.TypeName !== 'Array') {
+            if (obj.MemberType.ModelName === i.ModelName) {
+              return true
+            }
+          } else if (obj.TypeName !== 'Array' && i.TypeName === 'Array') {
+            if (obj.ModelName === i.MemberType.ModelName) {
+              return true
+            }
+          }
+        }
+        return false
+      }
+
+      for (const c of context) {
+        if (c.TypeName === 'Array' || c.ModelName !== undefined) {
+          if (!contains(c, got)) {
+            got.push(c)
+          }
+        }
+      }
+      return got
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'getReferences', (context, options) => {
+      const got: any = []
+
+      if (Object.keys(context).length === 0) {
+        return []
+      }
+
+      for (const c in context) {
+        if (!context.hasOwnProperty(c)) {
+          continue
+        }
+
+        context[c].Name = c
+        got.push(context[c])
+      }
+
+      return got
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'getDistinctForeignModels', (context, options) => {
+      const got: any[] = []
+
+      if (!context || Object.keys(context).length === 0) {
+        return []
+      }
+
+      for (const c in context) {
+        if (!context[c].ForeignModel) {
+          continue
+        }
+
+        const ref = context[c]
+        if (got.indexOf(ref.ForeignModel) === -1) {
+          got.push(ref.ForeignModel)
+        }
+      }
+
+      return got
+    })
+
+    registerHandlebarsHelperMethods(handlebars, 'getObjectProps', (context, options) => {
+      const got: any = []
+
+      if (!context) {
+        return got
+      }
+
+      if (Object.keys(context).length === 0) {
+        return []
+      }
+
+      for (const c in context) {
+        if (!context.hasOwnProperty(c)) {
+          continue
+        }
+
+        context[c].Name = c
+        got.push(context[c])
+      }
+
+      return got
+    })
+
+    if (this.config && this.config.options.registerCustomHelpers) {
+      const register = handlebars.registerHelper.bind(handlebars)
+      this.config.options.registerCustomHelpers(register)
+    }
   }
 }

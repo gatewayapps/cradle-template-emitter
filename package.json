@@ -1,12 +1,13 @@
 {
   "name": "@gatewayapps/cradle-template-emitter",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Cradle emitter for reading Handlebars based template files",
   "main": "./dist/index.js",
   "scripts": {
-    "prepublishOnly": "npx tsc",
+    "prepublishOnly": "npm test && npx tsc",
+    "pretest": "tslint --project .",
     "build": "npx tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx mocha -r ts-node/register \"src/**/*.spec.ts\""
   },
   "files": [
     "dist/**/*"
@@ -22,15 +23,20 @@
   },
   "homepage": "https://github.com/gatewayapps/cradle-template-emitter#readme",
   "peerDependencies": {
-    "@gatewayapps/cradle": ">=0.1.1"
+    "@gatewayapps/cradle": ">=0.1.2"
   },
   "devDependencies": {
-    "@gatewayapps/cradle": "^0.1.1",
+    "@gatewayapps/cradle": "^0.1.2",
+    "@types/chai": "^4.1.6",
     "@types/fs-extra": "^5.0.4",
     "@types/handlebars": "^4.0.39",
+    "@types/mocha": "^5.2.5",
     "@types/node": "^10.9.4",
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0",
     "prettier": "^1.14.3",
     "prettier-tslint": "^0.4.0",
+    "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "typescript": "^3.0.3"
   },

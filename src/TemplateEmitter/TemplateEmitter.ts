@@ -78,7 +78,6 @@ export class TemplateEmitter implements ICradleEmitter {
       MinimumValue: property.MinimumValue,
       ModelName: property.ModelName,
       ModelType: this.formatDataContext(property.ModelType),
-      Operations: property.Operations,
       OriginalTypeName: property.TypeName,
       TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
       Unique: property.Unique
@@ -313,6 +312,7 @@ export class TemplateEmitter implements ICradleEmitter {
         const props = {
           Meta: m.Meta,
           Name: m.Name,
+          Operations: m.Operations,
           Properties: Object.keys(m.Properties).map((propertyName) => {
             return Object.assign({ Name: propertyName }, this.formatDataContext(m.Properties[propertyName]))
           }),

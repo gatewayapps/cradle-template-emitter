@@ -78,6 +78,7 @@ export class TemplateEmitter implements ICradleEmitter {
       MinimumValue: property.MinimumValue,
       ModelName: property.ModelName,
       ModelType: this.formatDataContext(property.ModelType),
+      Operations: property.Operations,
       OriginalTypeName: property.TypeName,
       TypeName: property.ModelName || this.mapDataTypes(property.TypeName),
       Unique: property.Unique

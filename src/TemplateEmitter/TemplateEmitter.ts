@@ -313,9 +313,11 @@ export class TemplateEmitter implements ICradleEmitter {
           Meta: m.Meta,
           Name: m.Name,
           Operations: m.Operations,
+          OriginalModel: m,
           Properties: Object.keys(m.Properties).map((propertyName) => {
             return Object.assign({ Name: propertyName }, this.formatDataContext(m.Properties[propertyName]))
           }),
+
           References: m.References
         }
 

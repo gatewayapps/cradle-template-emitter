@@ -72,11 +72,11 @@ export class TemplateEmitter implements ICradleEmitter {
       Autogenerate: property.Autogenerate,
       DefaultValue: this.mapDefaultValues(property.TypeName, property.DefaultValue),
       IsPrimaryKey: property.IsPrimaryKey,
+      MaximumLength: property.MaximumLength,
       MaximumValue: property.MaximumValue,
       MemberType: this.formatDataContext(property.MemberType),
       Members: [],
       MinimumValue: property.MinimumValue,
-      MaximumLength: property.MaximumLength,
       ModelName: property.ModelName,
       ModelType: this.formatDataContext(property.ModelType),
       OriginalTypeName: property.TypeName,
@@ -168,6 +168,10 @@ export class TemplateEmitter implements ICradleEmitter {
             }
           } else if (obj.TypeName !== 'Array' && i.TypeName === 'Array') {
             if (obj.ModelName === i.MemberType.ModelName) {
+              return true
+            }
+          } else if (obj.TypeName !== 'Array' && i.TypeName !== 'Array') {
+            if (obj.ModelName === i.ModelName) {
               return true
             }
           }

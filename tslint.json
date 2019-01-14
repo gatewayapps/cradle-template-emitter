@@ -5,6 +5,7 @@
     ],
     "jsRules": {},
     "rules": {
+        "forin": [false],
         "indent": [true, "spaces", 4],
         "semicolon": [true, "never"],
         "quotemark": [true, "single"],

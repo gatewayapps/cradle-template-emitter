@@ -169,6 +169,10 @@ export class TemplateEmitter implements ICradleEmitter {
             if (obj.ModelName === i.MemberType.ModelName) {
               return true
             }
+          } else if (obj.TypeName !== 'Array' && i.TypeName !== 'Array') {
+            if (obj.ModelName === i.ModelName) {
+              return true
+            }
           }
         }
         return false

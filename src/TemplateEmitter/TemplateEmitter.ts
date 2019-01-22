@@ -6,14 +6,13 @@ import * as path from 'path'
 import { ITemplateEmitterOptions } from './ITemplateEmitterOptions'
 
 export class TemplateEmitter implements ICradleEmitter {
-  public config?: EmitterOptions<ITemplateEmitterOptions>
-  public console?: IConsole
+  public options: ITemplateEmitterOptions
+  public console: IConsole
   public dataTypeMappings?: any
   public languageType?: string
 
-  private void
-  public prepareEmitter(options: IEmitterOptions, console: IConsole) {
-    this.config = options
+  constructor(options: ITemplateEmitterOptions, console: IConsole) {
+    this.options = options
     this.console = console
     this.dataTypeMappings = undefined
     this.languageType = ''
@@ -21,11 +20,11 @@ export class TemplateEmitter implements ICradleEmitter {
 
   public async emitSchema(schema: CradleSchema) {
     try {
-      if (!this.config || !this.config.options) {
+      if (!this.options) {
         throw new Error('Template emitter options are required')
       }
 
-      const templateString = fs.readFileSync(this.config.options.sourcePath, {
+      const templateString = fs.readFileSync(this.options.sourcePath, {
         encoding: 'utf8'
       })
 
@@ -36,23 +35,23 @@ export class TemplateEmitter implements ICradleEmitter {
       this.registerHandlebarsHelperMethods()
 
       const fn = handlebars.compile(templateString)
-      const outputFileFn = handlebars.compile(this.config.options.outputPath.split(path.sep).join('/'))
+      const outputFileFn = handlebars.compile(this.options.outputPath.split(path.sep).join('/'))
 
       // get language type based on output path file extension
-      this.languageType = this.config.options.languageType || this.config.options.outputPath.substring(this.config.options.outputPath.lastIndexOf('.') + 1)
+      this.languageType = this.options.languageType || this.options.outputPath.substring(this.options.outputPath.lastIndexOf('.') + 1)
 
       // get data type mappings based on language type
       this.dataTypeMappings = require(`./mappings/${this.languageType}/mapping.js`)
 
-      if (this.config.options.mode === 'schema') {
+      if (this.options.mode === 'schema') {
         const filesWritten = await this.doEmitSchema(schema, fn, outputFileFn)
-        if (this.config.options.onFilesEmitted) {
-          this.config.options.onFilesEmitted(filesWritten)
+        if (this.options.onFilesEmitted) {
+          this.options.onFilesEmitted(filesWritten)
         }
       } else {
         const filesWritten = await this.doEmitModels(schema, fn, outputFileFn)
-        if (this.config.options.onFilesEmitted) {
-          this.config.options.onFilesEmitted(filesWritten)
+        if (this.options.onFilesEmitted) {
+          this.options.onFilesEmitted(filesWritten)
         }
       }
     } catch (err) {
@@ -251,24 +250,25 @@ export class TemplateEmitter implements ICradleEmitter {
       return got
     })
 
-    if (this.config && this.config.options.registerCustomHelpers) {
-      const register = handlebars.registerHelper.bind(handlebars)
-      this.config.options.registerCustomHelpers(register)
+    if (this.options && this.options.registerCustomHelpers) {
+      this.options.registerCustomHelpers((name: string, fn: Handlebars.HelperDelegate) => {
+        handlebars.registerHelper(name, fn)
+      })
     }
   }
   public writeFileContents(filePath: string, content: string): boolean {
     const fileExists = fs.existsSync(filePath)
 
     if (fileExists) {
-      if (!this.config || !this.config.options.overwriteExisting) {
+      if (!this.options || !this.options.overwriteExisting) {
         console.log('Overwrite rules state no overwriting of existing file:', filePath)
         return false
       }
     }
 
     fs.writeFileSync(filePath, content)
-    if (this.config!.options.onFileEmitted) {
-      this.config!.options.onFileEmitted(filePath)
+    if (this.options.onFileEmitted) {
+      this.options.onFileEmitted(filePath)
     }
     return true
   }
@@ -276,8 +276,8 @@ export class TemplateEmitter implements ICradleEmitter {
   private async doEmitSchema(schema: CradleSchema, fn: (any) => any, outputFileFn: (any) => any) {
     let models: any = []
     models = schema.Models.filter((m) => {
-      if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
-        const shouldEmit = this.config.options.shouldEmit(m)
+      if (this.options && this.options.shouldEmit && {}.toString.call(this.options.shouldEmit) === '[object Function]') {
+        const shouldEmit = this.options.shouldEmit(m)
         if (shouldEmit) {
           return m
         }
@@ -307,8 +307,8 @@ export class TemplateEmitter implements ICradleEmitter {
     const results: string[] = []
     await Promise.all(
       schema.Models.map(async (m) => {
-        if (this.config && this.config.options.shouldEmit && {}.toString.call(this.config.options.shouldEmit) === '[object Function]') {
-          const ignore = this.config.options.shouldEmit(m)
+        if (this.options && this.options.shouldEmit && {}.toString.call(this.options.shouldEmit) === '[object Function]') {
+          const ignore = this.options.shouldEmit(m)
           if (!ignore) {
             return
           }

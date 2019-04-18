@@ -114,7 +114,7 @@ export class TemplateEmitter implements ICradleEmitter {
 
   public mapDefaultValues(typeName: string, defaultValue: any) {
     try {
-      if (!this.dataTypeMappings) {
+      if (!this.dataTypeMappings) { 
         return defaultValue
       }
       return this.dataTypeMappings.convertValue(typeName, defaultValue)
@@ -150,6 +150,32 @@ export class TemplateEmitter implements ICradleEmitter {
 
     handlebars.registerHelper('toLowerCase', (str) => {
       return str.toLowerCase()
+    })
+    handlebars.registerHelper({
+      eq: function (v1, v2) {
+        return v1 === v2
+      },
+      ne: function (v1, v2) {
+        return v1 !== v2
+      },
+      lt: function (v1, v2) {
+        return v1 < v2
+      },
+      gt: function (v1, v2) {
+        return v1 > v2
+      },
+      lte: function (v1, v2) {
+        return v1 <= v2
+      },
+      gte: function (v1, v2) {
+        return v1 >= v2
+      },
+      and: function () {
+        return Array.prototype.slice.call(arguments).every(Boolean)
+      },
+      or: function () {
+        return Array.prototype.slice.call(arguments, 0, -1).some(Boolean)
+      }
     })
 
     handlebars.registerHelper('getDistinctObjects', (context, options) => {

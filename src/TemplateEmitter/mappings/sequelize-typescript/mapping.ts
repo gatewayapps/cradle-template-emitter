@@ -18,6 +18,9 @@ export const values = {
     String: {
 
         type: 'string',
+    },
+    Binary: {
+        type: 'Buffer'
     }
 }
 

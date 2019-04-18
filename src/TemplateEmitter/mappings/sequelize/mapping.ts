@@ -17,6 +17,9 @@ export const values = {
   UniqueIdentifier: {
     defaultValue: 'Sequelize.UUIDV4',
     type: 'UUID'
+  },
+  Binary: {
+    type: 'BLOB'
   }
 }
 

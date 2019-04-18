@@ -21,11 +21,18 @@ export const values = {
     },
     Binary: {
         type: 'Buffer'
+    },
+    UniqueIdentifier: {
+        defaultValue: 'Sequelize.UUIDV4',
+        type: 'string'
     }
 }
 
 export function convertValue(typeName: string, input: any): any {
     switch (typeName) {
+        case 'UniqueIdentifier': {
+            return 'Sequelize.UUIDV4'
+          }
         case 'DateTime': {
             if (input === 'DateTimeNow') {
                 return 'Sequelize.NOW'

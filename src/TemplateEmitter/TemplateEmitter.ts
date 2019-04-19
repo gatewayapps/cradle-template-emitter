@@ -76,6 +76,7 @@ export class TemplateEmitter implements ICradleEmitter {
       MemberType: this.formatDataContext(property.MemberType),
       Members: [],
       MinimumValue: property.MinimumValue,
+      ReferencedBy: property.ReferencedBy,
       ModelName: property.ModelName,
       ModelType: this.formatDataContext(property.ModelType),
       OriginalTypeName: property.TypeName,
